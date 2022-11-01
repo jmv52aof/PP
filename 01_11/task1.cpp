@@ -13,18 +13,18 @@ void print_vector(vector<int> v)
 
 int main()
 {
-	vector<int> numbers = { 8, 2, 3, 4, 5, 6, 7, 8 };
+	vector<int> a = { 8, 2, 3, 4, 5, 6, 7, 8 };
 
-	vector<int> swings = {};
+	vector<int> b = {};
 	transform(
-		numbers.begin(), 
-		numbers.end(),
-		back_inserter(swings),
+		a.begin(), 
+		a.end(),
+		back_inserter(b),
 		[max_elem = INT_MIN, min_elem = INT_MAX] (int item) mutable {
 			max_elem = max(max_elem, item);
 			min_elem = min(min_elem, item);
 			return max_elem - min_elem;
 		}
 	);
-	print_vector(swings);
+	print_vector(b);
 }
