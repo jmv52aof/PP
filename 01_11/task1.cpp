@@ -1,8 +1,6 @@
 #include <iostream>
-#include <numeric>
 #include <vector>
 #include <algorithm>
-#include <iterator>
 #include <ctype.h>
 
 using namespace std;
