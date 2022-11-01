@@ -20,7 +20,7 @@ int main()
 		numbers.begin(), 
 		numbers.end(),
 		back_inserter(swings),
-		[max_elem = 0, min_elem = INT_MAX] (int item) mutable {
+		[max_elem = INT_MIN, min_elem = INT_MAX] (int item) mutable {
 			max_elem = max(max_elem, item);
 			min_elem = min(min_elem, item);
 			return max_elem - min_elem;
