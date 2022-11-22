@@ -1,4 +1,4 @@
-﻿#include <iostream>
+#include <iostream>
 #include <vector>
 #include <algorithm>
 #include <conio.h>
@@ -15,37 +15,8 @@ struct Cell
 const char SYMBOL_APPLE = '@';
 const char SYMBOL_SNAKE = '#';
 const char SYMBOL_EMPTY = '.';
-
-void printLine(vector<char> line)
-{
-    copy(line.begin(), line.end(), ostream_iterator<char>(cout, ""));
-    cout << endl;
-}
-
-void printField(vector<vector<char>> field)
-{
-    for_each(field.begin(), field.end(), printLine);
-}
-
-void setCursorPos(int x, int y) 
-{
-    COORD pos = { x, y };
-    HANDLE output = GetStdHandle(STD_OUTPUT_HANDLE);
-    SetConsoleCursorPosition(output, pos);
-}
-
-void drawSnake(vector<vector<char>>& field, vector<Cell> snake)
-{
-    for (Cell cell : snake)
-    {
-        field[cell.x][cell.y] = SYMBOL_SNAKE;
-    }
-}
-
-void drawApple(vector<vector<char>>& field, Cell apple)
-{
-    field[apple.x][apple.y] = SYMBOL_APPLE;
-}
+const int FIELD_SIZE_ROWS = 10;
+const int FIELD_SIZE_COLUMNS = 10;
 
 vector<vector<char>> newField(int countRows, int countColumns)
 {
@@ -58,19 +29,65 @@ vector<vector<char>> newField(int countRows, int countColumns)
     return field;
 }
 
+void printLine(vector<char> line)
+{
+    copy(line.begin(), line.end(), ostream_iterator<char>(cout, " "));
+    cout << endl;
+}
+
+void printField(vector<vector<char>> field)
+{
+    for_each(field.begin(), field.end(), printLine);
+}
+
+void drawSnake(vector<vector<char>>& field, vector<Cell> snake)
+{
+    for (Cell cell : snake)
+    {
+        field[cell.y][cell.x] = SYMBOL_SNAKE;
+    }
+}
+
+void drawApple(vector<vector<char>>& field, Cell& apple)
+{
+    field[apple.y][apple.x] = SYMBOL_APPLE;
+}
+
+void updateApple(vector<Cell>& snake, Cell& apple)
+{
+    vector<Cell> freeCells;
+    for (int i = 0; i < FIELD_SIZE_ROWS; ++i)
+    {
+        for (int j = 0; j < FIELD_SIZE_COLUMNS; ++j)
+        {
+            Cell newCell = {i, j};
+            freeCells.push_back(newCell);
+        }
+    }
+    for (auto cell : snake)
+    {
+        remove_if(freeCells.begin(), freeCells.end(), [&cell] (Cell freeCell) mutable {
+            return freeCell.x == cell.x && freeCell.y == cell.y;
+        });
+    }
+
+    random_shuffle(freeCells.begin(), freeCells.end());
+    apple.x = freeCells[0].x;
+    apple.y = freeCells[0].y;
+}
+
 void draw(vector<vector<char>>& field, vector<Cell>& snake, Cell& apple)
 {
-    system("cls"); // Empty console
-    drawSnake(field, snake);
+    // system("cls"); // Clear console
+    cout << "\x1B[2J\x1B[H";
     drawApple(field, apple);
+    drawSnake(field, snake);
     printField(field);
 }
 
 int main()
 {
     // INIT
-    const int FIELD_SIZE_ROWS = 20;
-    const int FIELD_SIZE_COLUMNS = 20;
     vector<vector<char>> field = newField(FIELD_SIZE_ROWS, FIELD_SIZE_COLUMNS);
 
     vector<Cell> snake;
@@ -87,7 +104,8 @@ int main()
     // UPDATE AND DRAW LOOP
     while (true)
     {
-        system("timeout /t 0");
+        // system("timeout /t 0");
+        Sleep(200);
         draw(field, snake, apple);
 
         // Get input
@@ -101,25 +119,25 @@ int main()
         field = newField(FIELD_SIZE_ROWS, FIELD_SIZE_COLUMNS);
 
         // Update snake
-        if (inputKey == 'w')
-        {
-            directionX = -1;
-            directionY = 0;
-        }
-        if (inputKey == 's')
-        {
-            directionX = 1;
-            directionY = 0;
-        }
-        if (inputKey == 'a')
+        if (inputKey == 'w' && directionY != 1)
         {
             directionX = 0;
             directionY = -1;
         }
-        if (inputKey == 'd')
+        if (inputKey == 's' && directionY != -1)
         {
             directionX = 0;
             directionY = 1;
+        }
+        if (inputKey == 'a' && directionX != 1)
+        {
+            directionX = -1;
+            directionY = 0;
+        }
+        if (inputKey == 'd' && directionX != -1)
+        {
+            directionX = 1;
+            directionY = 0;
         }
 
         Cell snakeHead = snake.back();
@@ -135,19 +153,42 @@ int main()
         }
         else
         {
-  
+            updateApple(snake, apple);
         }
 
         // Check fail
         snakeHead = snake.back();
-        if (snakeHead.x >= FIELD_SIZE_ROWS
-            || snakeHead.y >= FIELD_SIZE_COLUMNS
-            || snakeHead.x < 0
-            || snakeHead.y < 0
-            )
+        if (snakeHead.x >= FIELD_SIZE_ROWS ||
+            snakeHead.y >= FIELD_SIZE_COLUMNS ||
+            snakeHead.x < 0 ||
+            snakeHead.y < 0
+           )
         {
-            cout << "YOU ARE LOOSE" << endl;
-            break;
+            if (snake.size() == 1)
+            {
+                cout << "YOU ARE LOOSE" << endl;
+                return 0;
+            }
+
+            if (snake[1].x + 1 == snake[0].x) directionX = -1;
+            if (snake[1].y + 1 == snake[1].y) directionY = -1;
+            reverse(snake.begin(), snake.end());
+            snake.erase(snake.begin());
+            directionY = 1;
+            directionX = 0;
         }
+
+        for (int i = 0; i < snake.size(); ++i)
+        {
+            for (int j = i + 1; j < snake.size(); ++j)
+            {
+                if (snake[i].x == snake[j].x && snake[i].y == snake[j].y)
+                {
+                    cout << "YOU ARE LOOSE" << endl;
+                    return 0;
+                }
+            }
+        }
+
     }
 }
