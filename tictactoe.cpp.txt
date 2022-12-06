@@ -1,0 +1,204 @@
+#include <iostream>
+#include <vector>
+#include <deque>
+#include <algorithm>
+#include <conio.h>
+#include <Windows.h>
+
+using namespace std;
+
+struct Cell
+{
+    int x;
+    int y;
+};
+
+const char SYMBOL_EMPTY = ' ';
+const char SYMBOL_CIRCLE = 'O';
+const char SYMBOL_CROSS = 'X';
+const int USER_LOSS = 0;
+const int USER_VICTORY = 1;
+const int FIELD_SIZE = 3;
+
+vector<vector<char>> NewField(int size)
+{
+    vector<vector<char>> field;
+    for (int i = 0; i < size; ++i)
+    {
+        vector<char> NewRow(size, SYMBOL_EMPTY);
+        field.push_back(NewRow);
+    }
+    return field;
+}
+
+void PrintLine(vector<char> line)
+{
+    copy(line.begin(), line.end(), ostream_iterator<char>(cout, ""));
+    cout << endl;
+}
+
+void PrintField(vector<vector<char>>& field)
+{
+    for_each(field.begin(), field.end(), PrintLine);
+}
+
+//void FinishGame(int endCode)
+//{
+//    if (endCode == LOSS) cout << "YOU LOST :(";
+//    else cout << "YOU WON! :)";
+//    exit(0);
+//}
+//
+//bool CheckVictory(deque<Cell>& snake)
+//{
+//    return snake.size() == FIELD_SIZE_COLUMNS * FIELD_SIZE_ROWS;
+//}
+
+int GetWinner(vector<vector<char>>& field)
+{
+    vector<vector<char>> lines;
+    for (auto line : field)
+    {
+        lines.push_back(line);
+    }
+    for (int i = 0; i < FIELD_SIZE; ++i)
+    {
+        vector<char> line;
+        for (int j = 0; j < FIELD_SIZE; ++j)
+        {
+            line.push_back(field[j][i]);
+        }
+        lines.push_back(line);
+    }
+    for (int i = 0; i < FIELD_SIZE; ++i)
+    {
+        vector<char> line1;
+        for (int j = 0; j < FIELD_SIZE; ++j)
+        {
+            line1.push_back(field[j][i]);
+        }
+
+        vector<char> line2;
+        for (int j = 0; j < FIELD_SIZE; ++j)
+        {
+            line2.push_back(field[i][FIELD_SIZE - j - 1]);
+        }
+        lines.push_back(line1);
+        lines.push_back(line2);
+    }
+
+    vector<char> userWinnerLine = vector<char>(FIELD_SIZE, SYMBOL_CROSS);
+    vector<char> aiWinnerLine = vector<char>(FIELD_SIZE, SYMBOL_CIRCLE);
+
+    if (find(lines.begin(), lines.end(), userWinnerLine) != lines.end()) return USER_VICTORY;
+    if (find(lines.begin(), lines.end(), aiWinnerLine) != lines.end()) return USER_LOSS;
+    return -1;
+}
+
+int IsStepPossible(vector<vector<char>>& field)
+{
+    for (auto line : field)
+    {
+        for (auto symbol : line)
+        {
+            if (symbol == SYMBOL_EMPTY) return 1;
+        }
+    }
+    system("color 25");
+    return 0;
+}
+
+int MiniMax(vector<vector<char>>& field, bool isMaximizing, int depth)
+{
+    if (depth == 4) return 0;
+    for (int i = 0; i < FIELD_SIZE; ++i)
+    {
+        for (int j = 0; j < FIELD_SIZE; ++j)
+        {
+            if (field[i][j] != SYMBOL_EMPTY) continue;
+
+            if (isMaximizing) field[i][j] = SYMBOL_CIRCLE;
+            if (!isMaximizing) field[i][j] = SYMBOL_CROSS;
+
+            int winner = GetWinner(field);
+            field[i][j] = SYMBOL_EMPTY;
+
+            if (winner == USER_LOSS && isMaximizing) return 1;
+            if (winner == USER_VICTORY && isMaximizing) return -1;
+            if (winner == USER_LOSS && !isMaximizing) return -1;
+            if (winner == USER_VICTORY && !isMaximizing) return 1;
+            if (!IsStepPossible(field)) return 0;
+
+            MiniMax(field, !isMaximizing, depth + 1);
+        }
+    }
+}
+
+void MakeAIStep(vector<vector<char>>& field)
+{
+    // Maximizing for AI, +1 if AI victory
+    int bestScore = -1;
+    int bestStepI;
+    int bestStepJ;
+    for (int i = 0; i < FIELD_SIZE; ++i)
+    {
+        for (int j = 0; j < FIELD_SIZE; ++j)
+        {
+            if (field[i][j] != SYMBOL_EMPTY) continue;
+
+            field[i][j] = SYMBOL_CIRCLE;
+            int result = MiniMax(field, true, 0);
+            if (result > bestScore)
+            {
+                bestScore = result;
+                bestStepI = i;
+                bestStepJ = j;
+            }
+            field[i][j] = SYMBOL_EMPTY;
+        }
+    }
+    field[bestStepI][bestStepJ] = SYMBOL_CIRCLE;
+}
+
+void main()
+{
+    // INIT
+    vector<vector<char>> field = NewField(FIELD_SIZE);
+
+    system("color 1F");
+    SetConsoleOutputCP(1251);
+
+    // UPDATE AND DRAW LOOP
+    while (GetWinner(field) == -1)
+    {
+        system("cls");
+        PrintField(field);
+
+        int stepI;
+        int stepJ;
+        cout << "Введите строку (1-" << FIELD_SIZE << "): ";
+        cin >> stepI;
+        cout << "Введите столбец (1-" << FIELD_SIZE << "): ";
+        cin >> stepJ;
+
+        --stepI;
+        --stepJ;
+        if (stepI < 0 || stepI >= FIELD_SIZE || stepJ < 0 || stepI >= FIELD_SIZE) continue;
+        if (field[stepI][stepJ] != SYMBOL_EMPTY) continue;
+
+        // Make user step
+        field[stepI][stepJ] = SYMBOL_CROSS;
+        if (IsStepPossible(field)) MakeAIStep(field);
+    }
+
+    if (GetWinner(field) == USER_VICTORY)
+    {
+        cout << "X ПОБЕДИЛИ";
+    }
+
+
+    if (GetWinner(field) == USER_LOSS)
+    {
+        cout << "O ПОБЕДИЛИ";
+    }
+}
