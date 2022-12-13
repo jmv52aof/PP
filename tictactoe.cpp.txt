@@ -73,14 +73,10 @@ int GetWinner(vector<vector<char>>& field)
     for (int i = 0; i < FIELD_SIZE; ++i)
     {
         vector<char> line1;
-        for (int j = 0; j < FIELD_SIZE; ++j)
-        {
-            line1.push_back(field[j][i]);
-        }
-
         vector<char> line2;
         for (int j = 0; j < FIELD_SIZE; ++j)
         {
+            line1.push_back(field[j][i]);
             line2.push_back(field[i][FIELD_SIZE - j - 1]);
         }
         lines.push_back(line1);
@@ -104,13 +100,19 @@ int IsStepPossible(vector<vector<char>>& field)
             if (symbol == SYMBOL_EMPTY) return 1;
         }
     }
-    system("color 25");
     return 0;
 }
 
 int MiniMax(vector<vector<char>>& field, bool isMaximizing, int depth)
 {
-    if (depth == 4) return 0;
+    if (depth == 2) return 0;
+    if (!IsStepPossible(field)) return 0;
+    int winner = GetWinner(field);
+    if (winner == USER_VICTORY) return -1 * depth;
+    if (winner == USER_LOSS) return 1 * depth;
+
+    int minimaxScore = INT_MAX;
+    if (isMaximizing) minimaxScore = INT_MIN;
     for (int i = 0; i < FIELD_SIZE; ++i)
     {
         for (int j = 0; j < FIELD_SIZE; ++j)
@@ -120,24 +122,21 @@ int MiniMax(vector<vector<char>>& field, bool isMaximizing, int depth)
             if (isMaximizing) field[i][j] = SYMBOL_CIRCLE;
             if (!isMaximizing) field[i][j] = SYMBOL_CROSS;
 
-            int winner = GetWinner(field);
+            int score = MiniMax(field, !isMaximizing, depth + 1);
+            if (isMaximizing) minimaxScore = max(minimaxScore, score);
+            if (!isMaximizing) minimaxScore = min(minimaxScore, score);
+
             field[i][j] = SYMBOL_EMPTY;
-
-            if (winner == USER_LOSS && isMaximizing) return 1;
-            if (winner == USER_VICTORY && isMaximizing) return -1;
-            if (winner == USER_LOSS && !isMaximizing) return -1;
-            if (winner == USER_VICTORY && !isMaximizing) return 1;
-            if (!IsStepPossible(field)) return 0;
-
-            MiniMax(field, !isMaximizing, depth + 1);
         }
     }
+
+    return minimaxScore;
 }
 
 void MakeAIStep(vector<vector<char>>& field)
 {
     // Maximizing for AI, +1 if AI victory
-    int bestScore = -1;
+    int bestScore = INT_MIN;
     int bestStepI;
     int bestStepJ;
     for (int i = 0; i < FIELD_SIZE; ++i)
@@ -147,7 +146,8 @@ void MakeAIStep(vector<vector<char>>& field)
             if (field[i][j] != SYMBOL_EMPTY) continue;
 
             field[i][j] = SYMBOL_CIRCLE;
-            int result = MiniMax(field, true, 0);
+            int result = MiniMax(field, false, 0);
+            cout << result;
             if (result > bestScore)
             {
                 bestScore = result;
@@ -157,6 +157,8 @@ void MakeAIStep(vector<vector<char>>& field)
             field[i][j] = SYMBOL_EMPTY;
         }
     }
+    char t;
+    cin >> t;
     field[bestStepI][bestStepJ] = SYMBOL_CIRCLE;
 }
 
