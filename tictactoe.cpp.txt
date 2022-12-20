@@ -2,8 +2,8 @@
 #include <vector>
 #include <deque>
 #include <algorithm>
-#include <conio.h>
-#include <Windows.h>
+#include <climits>
+#include <iterator>
 
 using namespace std;
 
@@ -70,18 +70,16 @@ int GetWinner(vector<vector<char>>& field)
         }
         lines.push_back(line);
     }
+    
+    vector<char> line1;
+    vector<char> line2;
     for (int i = 0; i < FIELD_SIZE; ++i)
     {
-        vector<char> line1;
-        vector<char> line2;
-        for (int j = 0; j < FIELD_SIZE; ++j)
-        {
-            line1.push_back(field[j][i]);
-            line2.push_back(field[i][FIELD_SIZE - j - 1]);
-        }
-        lines.push_back(line1);
-        lines.push_back(line2);
+        line1.push_back(field[i][i]);
+        line2.push_back(field[i][FIELD_SIZE - i - 1]);
     }
+    lines.push_back(line1);
+    lines.push_back(line2);
 
     vector<char> userWinnerLine = vector<char>(FIELD_SIZE, SYMBOL_CROSS);
     vector<char> aiWinnerLine = vector<char>(FIELD_SIZE, SYMBOL_CIRCLE);
@@ -105,11 +103,10 @@ int IsStepPossible(vector<vector<char>>& field)
 
 int MiniMax(vector<vector<char>>& field, bool isMaximizing, int depth)
 {
-    if (depth == 2) return 0;
-    if (!IsStepPossible(field)) return 0;
     int winner = GetWinner(field);
-    if (winner == USER_VICTORY) return -1 * depth;
-    if (winner == USER_LOSS) return 1 * depth;
+    if (winner == USER_VICTORY) return -1;
+    if (winner == USER_LOSS) return 1;
+    if (!IsStepPossible(field)) return 0;
 
     int minimaxScore = INT_MAX;
     if (isMaximizing) minimaxScore = INT_MIN;
@@ -147,7 +144,6 @@ void MakeAIStep(vector<vector<char>>& field)
 
             field[i][j] = SYMBOL_CIRCLE;
             int result = MiniMax(field, false, 0);
-            cout << result;
             if (result > bestScore)
             {
                 bestScore = result;
@@ -157,23 +153,22 @@ void MakeAIStep(vector<vector<char>>& field)
             field[i][j] = SYMBOL_EMPTY;
         }
     }
-    char t;
-    cin >> t;
+
     field[bestStepI][bestStepJ] = SYMBOL_CIRCLE;
 }
 
-void main()
+int main()
 {
     // INIT
     vector<vector<char>> field = NewField(FIELD_SIZE);
 
-    system("color 1F");
-    SetConsoleOutputCP(1251);
+    //system("color 1F");
+    //SetConsoleOutputCP(1251);
 
     // UPDATE AND DRAW LOOP
-    while (GetWinner(field) == -1)
+    while (IsStepPossible(field) && GetWinner(field) == -1)
     {
-        system("cls");
+        //system("cls");
         PrintField(field);
 
         int stepI;
