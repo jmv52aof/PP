@@ -4,6 +4,8 @@
 #include <algorithm>
 #include <climits>
 #include <iterator>
+#include <Windows.h>
+#include <conio.h>
 
 using namespace std;
 
@@ -13,7 +15,7 @@ struct Cell
     int y;
 };
 
-const char SYMBOL_EMPTY = ' ';
+const char SYMBOL_EMPTY = '.';
 const char SYMBOL_CIRCLE = 'O';
 const char SYMBOL_CROSS = 'X';
 const int USER_LOSS = 0;
@@ -42,18 +44,6 @@ void PrintField(vector<vector<char>>& field)
     for_each(field.begin(), field.end(), PrintLine);
 }
 
-//void FinishGame(int endCode)
-//{
-//    if (endCode == LOSS) cout << "YOU LOST :(";
-//    else cout << "YOU WON! :)";
-//    exit(0);
-//}
-//
-//bool CheckVictory(deque<Cell>& snake)
-//{
-//    return snake.size() == FIELD_SIZE_COLUMNS * FIELD_SIZE_ROWS;
-//}
-
 int GetWinner(vector<vector<char>>& field)
 {
     vector<vector<char>> lines;
@@ -70,7 +60,7 @@ int GetWinner(vector<vector<char>>& field)
         }
         lines.push_back(line);
     }
-    
+
     vector<char> line1;
     vector<char> line2;
     for (int i = 0; i < FIELD_SIZE; ++i)
@@ -132,6 +122,8 @@ int MiniMax(vector<vector<char>>& field, bool isMaximizing, int depth)
 
 void MakeAIStep(vector<vector<char>>& field)
 {
+    system("color 8F");
+
     // Maximizing for AI, +1 if AI victory
     int bestScore = INT_MIN;
     int bestStepI;
@@ -155,6 +147,15 @@ void MakeAIStep(vector<vector<char>>& field)
     }
 
     field[bestStepI][bestStepJ] = SYMBOL_CIRCLE;
+
+    system("color 3F");
+}
+
+void SetCursorPosition(int x, int y) 
+{
+    COORD pos = { x, y };
+    HANDLE output = GetStdHandle(STD_OUTPUT_HANDLE);
+    SetConsoleCursorPosition(output, pos);
 }
 
 int main()
@@ -162,40 +163,54 @@ int main()
     // INIT
     vector<vector<char>> field = NewField(FIELD_SIZE);
 
-    //system("color 1F");
-    //SetConsoleOutputCP(1251);
+    system("color 3F");
+    SetConsoleOutputCP(1251);
+    PrintField(field);
+
+    Cell currentCursorPosition = { 0, 0 };
 
     // UPDATE AND DRAW LOOP
     while (IsStepPossible(field) && GetWinner(field) == -1)
     {
-        //system("cls");
-        PrintField(field);
+        SetCursorPosition(currentCursorPosition.x, currentCursorPosition.y);
+        if (!_kbhit()) continue;
+        char key = _getch();
 
-        int stepI;
-        int stepJ;
-        cout << "Введите строку (1-" << FIELD_SIZE << "): ";
-        cin >> stepI;
-        cout << "Введите столбец (1-" << FIELD_SIZE << "): ";
-        cin >> stepJ;
+        if (key == 'd') currentCursorPosition.x = min(FIELD_SIZE - 1, currentCursorPosition.x + 1);
+        if (key == 'a') currentCursorPosition.x = max(0, currentCursorPosition.x -  1);
+        if (key == 'w') currentCursorPosition.y = max(0, currentCursorPosition.y - 1);
+        if (key == 's') currentCursorPosition.y = min(FIELD_SIZE - 1, currentCursorPosition.y + 1);
 
-        --stepI;
-        --stepJ;
+        if (key != ' ') continue;
+
+        int stepI = currentCursorPosition.y;
+        int stepJ = currentCursorPosition.x;
+
         if (stepI < 0 || stepI >= FIELD_SIZE || stepJ < 0 || stepI >= FIELD_SIZE) continue;
         if (field[stepI][stepJ] != SYMBOL_EMPTY) continue;
 
         // Make user step
         field[stepI][stepJ] = SYMBOL_CROSS;
+        system("cls");
+        PrintField(field);
+
         if (IsStepPossible(field)) MakeAIStep(field);
+        system("cls");
+        PrintField(field);
     }
 
     if (GetWinner(field) == USER_VICTORY)
     {
+        system("color 1F");
         cout << "X ПОБЕДИЛИ";
     }
-
-
-    if (GetWinner(field) == USER_LOSS)
+    else if (GetWinner(field) == USER_LOSS)
     {
+        system("color 4F");
         cout << "O ПОБЕДИЛИ";
+    }
+    else
+    {
+        cout << "НИЧЬЯ";
     }
 }
